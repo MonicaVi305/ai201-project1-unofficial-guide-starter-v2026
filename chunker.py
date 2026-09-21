@@ -81,23 +81,81 @@ def fallback_split(
 
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
-    """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    """Split documents into sentence-based chunks without producing empty fragments."""
+    import re
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    chunk_size = config.CHUNK_SIZE
+    overlap = config.CHUNK_OVERLAP
+    if overlap >= chunk_size:
+        raise ValueError("overlap has to be smaller than chunk_size")
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
+    chunks: list[Chunk] = []
+    for doc in documents:
+        text = re.sub(r"\r\n?", "\n", doc.text).strip()
+        if not text:
+            continue
 
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
-    """
-    return fallback_split(documents)
+        paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
+        doc_chunks: list[str] = []
+
+        for para in paragraphs:
+            sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", para) if s.strip()]
+            if not sentences:
+                sentences = [para]
+
+            current = ""
+            for sentence in sentences:
+                if not sentence:
+                    continue
+
+                if not current:
+                    current = sentence
+                    continue
+
+                candidate = f"{current} {sentence}".strip()
+                if len(candidate) <= chunk_size:
+                    current = candidate
+                    continue
+
+                if len(current) >= 200:
+                    doc_chunks.append(current.strip())
+                    current = sentence
+                else:
+                    # If the current chunk is too short to stand alone, keep it with the
+                    # next sentence rather than producing a fragment that fails quality.
+                    if len(current) + 1 + len(sentence) <= chunk_size:
+                        current = f"{current} {sentence}".strip()
+                    else:
+                        doc_chunks.append(current.strip())
+                        current = sentence
+
+            if current.strip():
+                doc_chunks.append(current.strip())
+
+        # Merge tiny, low-value fragments into nearby chunks so the app doesn't emit
+        # leftovers that are too short to be useful.
+        merged: list[str] = []
+        for piece in doc_chunks:
+            if merged and len(piece) < 200 and len(merged[-1]) + 1 + len(piece) <= chunk_size:
+                merged[-1] = (merged[-1] + " " + piece).strip()
+            else:
+                merged.append(piece)
+
+        if merged and len(merged[0]) < 200 and len(merged) > 1:
+            merged[1] = (merged[0] + " " + merged[1]).strip()
+            merged = merged[1:]
+
+        for idx, piece in enumerate(merged):
+            chunks.append(
+                Chunk(
+                    text=piece.strip(),
+                    source=doc.source,
+                    index=idx,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
