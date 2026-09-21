@@ -62,43 +62,31 @@ borderline cases caused by semantically similar phrasing or noisy embeddings.
 
 ---
 
-## 4. Something about your chunks
+## 4. Chunk quality — complete thoughts
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
-
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
-
-
+For at least 4 of 5 sampled chunks, the chunk text begins and ends at sentence
+boundaries and is at least 200 characters long (so it reads as a complete
+thought rather than a heading fragment).
 
 **Why this target:**
-
-
+In Milestone 3 sampling showed short fragments and cut-off sentences reduced
+answer quality. Requiring 4 of 5 chunks to be full sentences and length >=200
+chars ensures chunks are likely to contain meaningful context while allowing
+one problematic sample.
 
 ---
 
-## 5. Your choice
+## 5. Cited sources contain the answer
 
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. It could be about
-     speed, about refusals, about a particular kind of question your corpus
-     handles badly, about source attribution being correct rather than merely
-     present — anything, as long as it names a number or an observable
-     outcome. -->
-
-
+For at least 4 of my 5 test questions, the source document(s) named in the
+system's answer actually contain the information used to produce that answer
+(i.e., the cited document includes the supporting sentence or fact).
 
 **Why this target:**
-
-
+Correct attribution is more than naming a document; the cited source must
+actually contain the supporting evidence. Checking 4 of 5 verifies that
+attribution is reliable while allowing for one edge case caused by noisy
+retrieval or borderline citations.
 
 ---
 
