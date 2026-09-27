@@ -120,7 +120,7 @@ Sources retrieved: admin_dining_dollars.txt, admin_meal_plan_changes.txt, dining
      how it went. -->
 
 ## Run Log — Before
-
+ 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
 | 1. Retrieved chunk contains the answer | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
