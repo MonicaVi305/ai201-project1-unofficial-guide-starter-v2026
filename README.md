@@ -106,6 +106,8 @@ Sources retrieved: admin_dining_dollars.txt, admin_meal_plan_changes.txt, dining
 
 **2.** I asked Copilot to help pick a relevance cutoff for the gate. It suggested a generic number without considering the actual retrieval distances. I checked the best-distance values from the five in-corpus questions and the five out-of-scope questions, then placed the cutoff in the gap between the two groups, which gave a threshold of 0.6 and kept clearly irrelevant questions out while allowing the relevant ones through.
 
+**3. (Unit 2)** I used Claude Code to help audit this unit's eval before I treated any of it as evidence. It caught two things I would have graded past: the vector index (`chroma_db/`) was still built from before my sentence-aware chunking fix, so an earlier eval run had silently scored the old, fragmented chunker instead of the current one — and a hand-built criteria table I'd started (`results/scorer.py`) had numbers that didn't match a fresh read of the actual retrieved chunks. After I rebuilt the index and reran the eval, I had it lay out the real per-criterion numbers and distance margins — not decide MET/MISSED, which I did myself — and that margin data is what pointed Milestone 3's diagnosis at the gate threshold as the one criterion worth tightening. It also wrote the real `scorer.py::judge()` function once I confirmed I wanted it built, and flagged the false negative it produces on the parking-permits question.
+
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
@@ -182,8 +184,14 @@ Data from `results/run_2026-09-27_1519_after.md`, same 7 in-corpus / 5 out-of-sc
 
 ## What's Still Broken
 
-Nothing major is still broken in the current pass. The only remaining risk is maintenance: if the corpus changes materially, the chunker should still be sanity-checked for sentence boundaries and minimum lengths before a run is treated as complete.
+No criterion is currently missed, but two things are genuinely unresolved, not just tidy:
+
+- **`scorer.py`'s `judge()` is a brittle keyword-substring check.** It produced a false negative on the parking-permits question — a fully correct answer that said "permits" instead of the literal "parking permits" — and I have no reason to think that's the only phrasing it'll ever misjudge. I didn't fix this here because this unit's time went into finding the stale-index bug and testing the threshold change instead; a better scorer (checking for the underlying fact rather than exact wording) is its own piece of work.
+- **The Milestone 4 threshold change (0.6 → 0.5) is unverified against anything that actually tests it.** None of my five out-of-scope questions land between 0.5 and 0.6 — they're all comfortably above 0.8 — so I can't yet point to a real question this change caught that the old threshold would have let through. I stopped here rather than construct an artificial near-boundary question, because a made-up example proves less than a real one and I'd rather flag the gap honestly than fake the evidence for it.
 
 ## What I'd Do Differently
 
-I would keep the same sentence-first strategy but formalize it as a stricter quality rule: every chunk should be a complete sentence or sentence cluster and should be above a minimum character threshold before it is accepted. That makes the chunker easier to test, easier to reason about, and less dependent on manual spot checks when new documents are added.
+Two of my five criteria, in hindsight, were written before I had real distance data to calibrate against:
+
+- **Criterion 3 (the gate)** should have targeted 5 of 5, not 4 of 5. A margin this wide (0.294 vs. 0.825) means the 4-of-5 tolerance was never actually being tested — it just never got the chance to matter.
+- **Criterion 1 (retrieved chunk contains the answer)**, as written, is scored by a literal keyword match against `expects`, which is too strict a proxy for "the answer is correct." I'd rewrite it to judge whether the retrieved chunk supports the actual fact asked for, not whether one specific phrase shows up verbatim — or pick `expects` phrases I'm certain any correct answer would restate exactly. 
