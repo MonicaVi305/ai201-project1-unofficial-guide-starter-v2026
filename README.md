@@ -150,9 +150,15 @@ The evidence came from the retrieval checks: in-corpus questions returned best d
 
 ## Diagnoses
 
-The main failure mode I tracked in this project was chunk fragmentation: a chunk is not useful if it begins in the middle of a thought or ends mid-sentence, because the model and the reader cannot answer from it alone. The fix was therefore to keep sentence boundaries, avoid tiny fragments, and merge leftover short text into a nearby chunk instead of letting it stand on its own.
+No criterion was missed against the rebuilt-index run (see Run Log — Before / Verdicts above), so there's nothing to trace back to a pipeline stage. That's a result worth being skeptical of rather than treating as a clean bill of health — a system that clears every target on the first try usually means the targets were safe, not that the system is excellent.
 
-The pipeline was otherwise healthy: loading → chunking → embedding → retrieval → generation. The retrieval distances were tightly separated by relevance, and the chunker produced input that was coherent enough to answer from without exposing the model to broken fragments.
+Looking at the margins instead of just the pass/fail:
+
+- **Criterion 3 (gate)** cleared its 4-of-5 target at 5 of 5, and the underlying numbers show why it wasn't close: in-corpus distances ran 0.170–0.294 and out-of-scope distances ran 0.825–0.934, a gap of more than 0.5 with nothing near the 0.6 cutoff on either side. A 4-of-5 tolerance was set before I had real distance data to calibrate against; with a gap this wide, **this is the criterion I'd tighten, to 5 of 5.**
+- **Criterion 1 (retrieval contains the answer)** cleared 6 of 7 even under a scorer that penalizes exact wording — the seventh, checked by hand, was also correct, just phrased differently than the keyword match expected. The true pass rate is 7 of 7, which suggests this target also had slack, though I'd want a less brittle scorer before tightening it.
+- **Criteria 2, 4, and 5** cleared at 7/7, 5/5, and 7/7 respectively, with no borderline cases in the chunks or citations I inspected — nothing here forced a close call.
+
+The one genuine risk this run surfaced wasn't a criterion at all: the vector index had gone stale relative to the chunker (built before the sentence-aware chunking fix landed), so an earlier eval pass was silently scoring the old chunker's output. That's a process gap — rebuilding the index isn't automatic after a chunker change — worth a note for future units rather than a chunk-fragmentation fix, since the fragmentation itself turned out to already be fixed.
 
 ## The Improvement
 
