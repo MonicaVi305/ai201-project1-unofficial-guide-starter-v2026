@@ -162,21 +162,23 @@ The one genuine risk this run surfaced wasn't a criterion at all: the vector ind
 
 ## The Improvement
 
-**What I changed:** I changed the chunker from a naive fixed-length split to a sentence-aware chunker that keeps chunks as complete thought units and merges very short leftovers into a nearby chunk.
+**What I changed:** Lowered `config.THRESHOLD` from 0.6 to 0.5 (`config.py`).
 
-**Why I picked it:** The diagnosis above was about chunk quality rather than retrieval quality: if the evidence is split across sentence boundaries, the answer becomes weak even when the document itself is relevant.
+**Why I picked it:** Milestone 3's diagnosis found criterion 3 (the gate) cleared its 4-of-5 target with the widest margin of any criterion — in-corpus distances topped out at 0.294 and out-of-scope distances started at 0.825, leaving 0.6 sitting in the middle of a gap over 0.5 wide. That's the criterion the diagnosis actually pointed at tightening, so I moved the cutoff to 0.5: still comfortably above every in-corpus distance I have, but meaningfully less permissive toward a future out-of-scope question that lands closer to the corpus than these five examples did.
 
 ### Run Log — After
 
+Data from `results/run_2026-09-27_1519_after.md`, same 7 in-corpus / 5 out-of-scope questions, `THRESHOLD = 0.5`.
+
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 2. Every answer names a source | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 4. Chunk quality — complete thoughts | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 5. Cited sources contain the answer | 4 of 5 | 5 of 5 | 4 of 5 | 5 of 5 | MET |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 6/7 | 6/7 | 6/7 | MET |
+| 2. Every answer names a source | 5 of 5 | 7/7 | 7/7 | 7/7 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunk quality — complete thoughts | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Cited sources contain the answer | 4 of 5 | 7/7 | 7/7 | 7/7 | MET |
 
-**Did it help?** Yes. The sentence-aware chunking preserved coherent passages and kept the retrieval evidence useful, while the relevance split between in-corpus and out-of-scope questions stayed wide enough for the gate to work reliably. The improved chunk quality reduced the risk of broken retrieval units without changing the underlying retrieval logic.
+**Did it help?** Not measurably, on this test set — and I want to be honest about that rather than dress it up. Every distance came out identical to the before run (retrieval doesn't depend on the threshold), and since the closest in-corpus question (0.294) and the closest out-of-scope question (0.825) were both already far from 0.6, moving the cutoff to 0.5 didn't flip a single verdict. What it did do is remove slack from the gate for cases this test set doesn't cover — a future out-of-scope question landing between 0.5 and 0.6 would now correctly get refused instead of let through. That's a real improvement to the gate's robustness, just not one these five out-of-scope questions were positioned to demonstrate. A more honest test of this change would need out-of-scope questions deliberately chosen to sit closer to the corpus.
 
 ## What's Still Broken
 
