@@ -121,25 +121,32 @@ Sources retrieved: admin_dining_dollars.txt, admin_meal_plan_changes.txt, dining
 
 ## Run Log — Before
  
+Data below is copied from `results/run_2026-09-27_1402.md` (7 in-scope questions, 5 out-of-scope), run against the rebuilt index. 
+
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 2. Every answer names a source | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 4. Chunk quality — complete thoughts | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
-| 5. Cited sources contain the answer | 4 of 5 | 5 of 5 | 4 of 5 | 5 of 5 | MET |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 6/7 | 6/7 | 6/7 |MET |
+| 2. Every answer names a source | 5 of 5 | 7/7 | 7/7 | 7/7 | MET|
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 |MET |
+| 4. Chunk quality — complete thoughts | 4 of 5 | 5/5 | 5/5 | 5/5 |MET |
+| 5. Cited sources contain the answer | 4 of 5 | 7/7 | 7/7 | 7/7 | MET|
 
-The evidence came from the retrieval checks: in-corpus questions returned best distances from 0.174 to 0.283, while out-of-scope questions stayed from 0.780 to 0.850. That clean separation is what makes the 0.6 cutoff workable and keeps the gate from letting unrelated questions through.
+Note on row 1: the one `judge()`-marked fail is the parking-permits question — its
+answer is complete and correct but never uses the literal phrase "parking permits"
+(it says "permits"), so the keyword-match scorer misses it. Worth deciding yourself
+whether that's a real miss or a scorer artifact.
+
+The evidence came from the retrieval checks: in-corpus questions returned best distances from 0.170 to 0.294, while out-of-scope questions stayed from 0.825 to 0.934. That clean separation is what makes the 0.6 cutoff workable and keeps the gate from letting unrelated questions through.
 
 ## Verdicts
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 | Retrieved chunks contain the answer | MET | The strongest matches for the five in-corpus questions all landed on chunks that contained the direct answer or the key supporting fact. |
-| 2 | Every answer names a source | MET | All answers cited a source document from the retrieved chunk metadata, so attribution was present at the answer stage. |
-| 3 | The relevance gate stops out-of-corpus questions | MET | The five out-of-scope questions all had best distances above 0.78, which is far above the 0.6 cutoff and therefore clearly rejected by the gate. |
-| 4 | Chunk quality — complete thoughts | MET | The sampled chunks are sentence-based and longer than 200 characters, so they read as complete informational units rather than fragmentary headings. |
-| 5 | Cited sources contain the answer | MET | The retrieved source document was the same document that supplied the supporting fact in the answer, so the citation and evidence matched. |
+| 1 | Retrieved chunks contain the answer | MET | 6 of 7 in-corpus questions passed the keyword-match scorer across all three runs. The seventh (parking permits) I checked by hand: the retrieved chunk and the answer built from it were both complete and correct, just phrased as "permits" instead of the literal "parking permits" the scorer looks for — a scorer wording issue, not a retrieval miss, so I'm counting all 7 as met. |
+| 2 | Every answer names a source | MET | Every one of the 21 runs (7 questions × 3 runs) named a source document inline in the answer text — confirmed by scanning the run log for a cited filename in each. |
+| 3 | The relevance gate stops out-of-corpus questions | MET | All five out-of-scope questions had best distances between 0.825 and 0.934, while every in-corpus question stayed between 0.170 and 0.294. That's a wide gap either side of the 0.6 cutoff, so this isn't a close call. |
+| 4 | Chunk quality — complete thoughts | MET | Sampled the top-ranked retrieved chunk for 5 questions after rebuilding the index: all 5 were at least 200 characters and began and ended on sentence boundaries. The sentence-aware chunker now merges each document's title line into the paragraph that follows instead of leaving it as its own short fragment. |
+| 5 | Cited sources contain the answer | MET | Checked all 7 cited source files against the specific claim each answer attributed to them, by searching the source document text directly. Every citation held up — no hallucinated or mismatched sources in any of the 21 runs. |
 
 ## Diagnoses
 
